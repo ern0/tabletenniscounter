@@ -1,4 +1,30 @@
-# include "ttc.hpp"
+#include "ttc.hpp"
+
+#ifndef POSIXINO
+#include <TM1637Display.h>
+#endif
+
+#define SEG_DOT 0x80
+
+//
+//      A
+//     ---
+//  F |   | B
+//     -G-
+//  E |   | C
+//     ---
+//      D
+
+	TM1637Display display1(CLK1,DIO1);
+	int counter = 0;
+	char welcome[] = {
+
+		SEG_G | SEG_E | SEG_D,
+		SEG_E | SEG_G | SEG_C | SEG_DOT,
+		SEG_F | SEG_G | SEG_E | SEG_D,
+		SEG_G | SEG_E
+
+	};
 
 
 	void setup() {
@@ -7,6 +33,11 @@
 		Serial.println("table tennis counter");
 
 		setupTimerInterrupt();
+
+		display1.setBrightness(0x07);
+		display1.setSegments(welcome);
+
+
 
 	} // setup()
 
@@ -35,15 +66,14 @@
 
 	ISR(TIMER1_COMPA_vect) {
 
-		Serial.print(".");
+		counter++;
 
 	} // timer1 interrupt
-
 
 
 	void loop() {
 
 		delay(1000);
-		Serial.print("\n");
+		Serial.println(counter);
 
 	} // loop

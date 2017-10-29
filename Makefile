@@ -1,4 +1,4 @@
-PLATFORM=$(shell platform.sh)
+PLATFORM=$(shell util/platform.sh)
 
 SRC=src
 PSRC=posixino

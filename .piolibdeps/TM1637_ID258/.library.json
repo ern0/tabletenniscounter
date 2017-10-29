@@ -1,0 +1,29 @@
+{
+    "name": "TM1637", 
+    "repository": {
+        "url": "https://github.com/avishorp/TM1637.git", 
+        "type": "git"
+    }, 
+    "platforms": [
+        "atmelavr", 
+        "espressif8266"
+    ], 
+    "frameworks": [
+        "arduino"
+    ], 
+    "version": "c64c89a36a", 
+    "authors": [
+        {
+            "maintainer": false, 
+            "name": "Avishay", 
+            "url": "https://github.com/avishorp", 
+            "email": null
+        }
+    ], 
+    "keywords": [
+        "tm1637", 
+        "led"
+    ], 
+    "id": 258, 
+    "description": "Arduino library for TM1637 (LED Driver)"
+}

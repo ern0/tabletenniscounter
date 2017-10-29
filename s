@@ -1,5 +1,5 @@
 #!/bin/bash
 clear
 
-BIN=bin/`platform.sh`
+BIN=bin/`util/platform.sh`
 $BIN/ttc
