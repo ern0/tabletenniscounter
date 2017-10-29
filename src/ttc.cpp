@@ -6,14 +6,20 @@
 
 #define SEG_DOT 0x80
 
-//
-//      A
-//     ---
-//  F |   | B
-//     -G-
-//  E |   | C
-//     ---
-//      D
+	//      A
+	//     ---
+	//  F |   | B    *
+	//     -G-      DOT
+	//  E |   | C    *
+	//     ---
+	//      D
+
+	const uint8_t welcome[] = {
+		SEG_G | SEG_E | SEG_D,
+		SEG_E | SEG_G | SEG_C,
+		SEG_F | SEG_G | SEG_E | SEG_D,
+		SEG_G | SEG_E
+	};
 
 	TM1637Display display1(CLK1,DIO1);
 	TM1637Display display2(CLK2,DIO2);
@@ -23,17 +29,16 @@
 		&display2
 	};
 
+	bool changed;
+
+	int tick[2];
 	int score[2];
-	int counter;
 
-	char welcome[] = {
-
-		SEG_G | SEG_E | SEG_D,
-		SEG_E | SEG_G | SEG_C | SEG_DOT,
-		SEG_F | SEG_G | SEG_E | SEG_D,
-		SEG_G | SEG_E
-
-	};
+	int pressConfirm[2];
+	int lastClick[2];
+	int clickCount[2];
+	EventType event[2];
+	bool lastState[2];
 
 
 	void setup() {
@@ -44,20 +49,27 @@
 		setupTimerInterrupt();
 		pinMode(BEEP,OUTPUT);
 
-		counter = 0;
+		changed = true;
 
 		for (int n = 0; n < 2; n++) {
 
-			pinMode(pp(n),INPUT_PULLUP);
+			pinMode(pepin(n),INPUT_PULLUP);
 
+			tick[n] = 0;
 			score[n] = 0;
+
+			pressConfirm[n] = 0;
+			lastClick[n] = 0;
+			clickCount[n] = 0;
+			event[n] = E_NONE;
+			lastState[n] = false;
 
 			display[n]->setBrightness(0x07);
 			display[n]->setSegments(welcome);
 			display[n]->setSegments(welcome);
 		}
 
-		beep(1);
+		beep(BEEP_WELCOME);
 		delay(800);
 
 	} // setup()
@@ -87,30 +99,31 @@
 
 	ISR(TIMER1_COMPA_vect) {
 
-		counter++;
+		for (int n = 0; n < 2; n++) tick[n]++;
 
 	} // timer1 interrupt
 
 
 	void loop() {
 
-		handlePedals();
+		handleClicks();
+		calcResults();
 		showResults();
-
-		delay(100);
+		delay(1);
 
 	} // loop
 
 
-	int pp(int n) {
+	int pepin(int n) {
 		return ( n == 0 ? PEDAL1 : PEDAL2 );
 	}
 
 
 	void beep(int mode) {
 
+return; ///
 		digitalWrite(BEEP,HIGH);
-		delay(200);
+		delay(20);
 		digitalWrite(BEEP,LOW);
 
 	} // beep()
@@ -118,7 +131,8 @@
 
 	void showResults() {
 
-		// args: value, dot bitmask, leading zero, length, position
+		if (!changed) return;
+		changed = false;
 		
 		for (int n = 0; n < 2; n++) {
 			display[n]->showNumberDecEx(score[n],0xff,true,2,0);
@@ -128,14 +142,100 @@
 	} // showResults()
 
 
-	void handlePedals() {
-
+	void calcResults() {
 		for (int n = 0; n < 2; n++) {
-			int press = !digitalRead(pp(n));
-			if (press) {
+
+			switch (event[n]) {
+
+			case E_CLICK:
 				score[n]++;
+				changed = true;
+				break;
+
+			case E_DOUBLECLICK:
+				score[n]--;
+				score[1 - n]++;
+				changed = true;
+				break;
+
+			case E_TRIPLECLICK:
+				score[1 - n]--;
+				changed = true;
+				break;
+
+			case E_NONE:
+			case E_IDLE:
+				// nop
+				break;
+			
+			} // switch
+
+			event[n] = E_NONE;
+
+		} // for sides
+	} // calcResults()
+
+
+	void handleClicks() {
+		for (int n = 0; n < 2; n++) {
+
+			// avoid prelling, confirm press
+			bool press = !digitalRead(pepin(n));
+			if (press) {
+				pressConfirm[n]++;
+			} else {
+				pressConfirm[n] = 0;
 			}
+			bool prec = (pressConfirm[n] > 2);
 
-		}
+			if (prec) {
 
-	} // handlePedals()
+				if (lastState[n]) {  // press -> press: hold
+					// nop
+				}  // if hold
+			
+				else {  // off -> press: click
+
+					if (lastClick[n] != 0) {
+						if (tick[n] - lastClick[n] > T_CLICKCLICK) {
+							lastClick[n] = 0;
+							clickCount[n] = 0;
+						}
+					} // if out of multi-click window
+
+					if (lastClick[n] == 0) clickCount[n] = 0;
+					clickCount[n]++;
+
+					if (clickCount[n] > 3) clickCount[n] -= 3;
+					if (clickCount[n] == 1) event[n] = E_CLICK;
+					if (clickCount[n] == 2) event[n] = E_DOUBLECLICK;
+					if (clickCount[n] == 3) event[n] = E_TRIPLECLICK;
+
+					lastClick[n] = tick[n];
+
+				} // else click
+
+			} // if press
+
+			else {  // not press
+
+				if (!lastState[n]) {  // press -> off: release
+					// nop
+				} // if release
+
+				else {  // off -> off: idle
+					if (lastClick[n] > 0) {
+						if (tick[n] - lastClick[n] > T_CLICKCLICK) {
+							lastClick[n] = 0;
+							event[n] = E_IDLE;
+						}
+					}
+				} // else idle
+
+			} // else not press
+
+			lastState[n] = prec;
+
+		} // for sides
+	} // handleClicks()
+
