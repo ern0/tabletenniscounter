@@ -14,4 +14,17 @@
 # define CLK2 10
 # define DIO2 9
 
+// beeper
+//
+# define BEEP 2
+
+// pedals
+//
+# define PEDAL1 3
+# define PEDAL2 4
+
 void setupTimerInterrupt();
+int pp(int n);
+void beep(int mode);
+void showResults();
+void handlePedals();

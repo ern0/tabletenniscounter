@@ -16,7 +16,16 @@
 //      D
 
 	TM1637Display display1(CLK1,DIO1);
-	int counter = 0;
+	TM1637Display display2(CLK2,DIO2);
+
+	TM1637Display* display[2] = { 
+		&display1,
+		&display2
+	};
+
+	int score[2];
+	int counter;
+
 	char welcome[] = {
 
 		SEG_G | SEG_E | SEG_D,
@@ -33,11 +42,23 @@
 		Serial.println("table tennis counter");
 
 		setupTimerInterrupt();
+		pinMode(BEEP,OUTPUT);
 
-		display1.setBrightness(0x07);
-		display1.setSegments(welcome);
+		counter = 0;
 
+		for (int n = 0; n < 2; n++) {
 
+			pinMode(pp(n),INPUT_PULLUP);
+
+			score[n] = 0;
+
+			display[n]->setBrightness(0x07);
+			display[n]->setSegments(welcome);
+			display[n]->setSegments(welcome);
+		}
+
+		beep(1);
+		delay(800);
 
 	} // setup()
 
@@ -73,7 +94,48 @@
 
 	void loop() {
 
-		delay(1000);
-		Serial.println(counter);
+		handlePedals();
+		showResults();
+
+		delay(100);
 
 	} // loop
+
+
+	int pp(int n) {
+		return ( n == 0 ? PEDAL1 : PEDAL2 );
+	}
+
+
+	void beep(int mode) {
+
+		digitalWrite(BEEP,HIGH);
+		delay(200);
+		digitalWrite(BEEP,LOW);
+
+	} // beep()
+
+
+	void showResults() {
+
+		// args: value, dot bitmask, leading zero, length, position
+		
+		for (int n = 0; n < 2; n++) {
+			display[n]->showNumberDecEx(score[n],0xff,true,2,0);
+			display[n]->showNumberDecEx(score[1 - n],0,true,2,2);
+		}
+
+	} // showResults()
+
+
+	void handlePedals() {
+
+		for (int n = 0; n < 2; n++) {
+			int press = !digitalRead(pp(n));
+			if (press) {
+				score[n]++;
+			}
+
+		}
+
+	} // handlePedals()
