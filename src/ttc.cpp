@@ -119,63 +119,6 @@
 	}
 
 
-	void beep(int mode) {
-
-return; ///
-		digitalWrite(BEEP,HIGH);
-		delay(20);
-		digitalWrite(BEEP,LOW);
-
-	} // beep()
-
-
-	void showResults() {
-
-		if (!changed) return;
-		changed = false;
-		
-		for (int n = 0; n < 2; n++) {
-			display[n]->showNumberDecEx(score[n],0xff,true,2,0);
-			display[n]->showNumberDecEx(score[1 - n],0,true,2,2);
-		}
-
-	} // showResults()
-
-
-	void calcResults() {
-		for (int n = 0; n < 2; n++) {
-
-			switch (event[n]) {
-
-			case E_CLICK:
-				score[n]++;
-				changed = true;
-				break;
-
-			case E_DOUBLECLICK:
-				score[n]--;
-				score[1 - n]++;
-				changed = true;
-				break;
-
-			case E_TRIPLECLICK:
-				score[1 - n]--;
-				changed = true;
-				break;
-
-			case E_NONE:
-			case E_IDLE:
-				// nop
-				break;
-			
-			} // switch
-
-			event[n] = E_NONE;
-
-		} // for sides
-	} // calcResults()
-
-
 	void handleClicks() {
 		for (int n = 0; n < 2; n++) {
 
@@ -206,10 +149,8 @@ return; ///
 					if (lastClick[n] == 0) clickCount[n] = 0;
 					clickCount[n]++;
 
-					if (clickCount[n] > 3) clickCount[n] -= 3;
-					if (clickCount[n] == 1) event[n] = E_CLICK;
-					if (clickCount[n] == 2) event[n] = E_DOUBLECLICK;
-					if (clickCount[n] == 3) event[n] = E_TRIPLECLICK;
+					if (clickCount[n] > 4) clickCount[n] -= 4;
+					event[n] = E_CLICK;
 
 					lastClick[n] = tick[n];
 
@@ -238,4 +179,98 @@ return; ///
 
 		} // for sides
 	} // handleClicks()
+
+
+	void beep(int mode) {
+
+return; ///
+		digitalWrite(BEEP,HIGH);
+		delay(20);
+		digitalWrite(BEEP,LOW);
+
+	} // beep()
+
+
+	void showResults() {
+
+		if (!changed) return;
+		changed = false;
+		
+		for (int n = 0; n < 2; n++) {
+			display[n]->showNumberDecEx(score[n],0xff,true,2,0);
+			display[n]->showNumberDecEx(score[1 - n],0,true,2,2);
+		}
+
+	} // showResults()
+
+
+	void calcResults() {
+
+		for (int n = 0; n < 2; n++) {
+
+			if (event[n] == E_CLICK) procClick(n);
+			if (event[n] == E_HOLD) procHold(n);
+			if (event[n] == E_IDLE) procIdle(n);
+
+		} // for
+
+	} // calcResults()
+
+
+	void procClick(int n) {
+
+		switch (clickCount[n]) {
+
+		case 1:
+			score[n]++;
+			changed = true;
+			break;
+
+		case 2:
+			if (score[n] > 0) --score[n];
+			score[1 - n]++;
+			changed = true;
+			break;
+
+		case 3:
+			if (score[1 - n] > 0) {
+				--score[1 - n];
+				changed = true;
+			}
+			if (score[n] > 0) {
+				--score[n];
+				changed = true;
+			}
+			break;
+
+		case 4:
+			score[n]++;
+			changed = true;
+			if (score[1 - n] > 0) --score[1 - n];
+			break;
+
+		} // switch
+
+		event[n] = E_NONE;
+
+	} // procClick()
+
+
+	void procHold(int n) {
+
+		// TODO
+
+		event[n] = E_NONE;
+
+	} // procHold()
+
+
+	void procIdle(int n) {
+
+		// TODO
+
+		event[n] = E_NONE;
+
+	} // procIdle()
+
 

@@ -14,7 +14,7 @@
 # define PEDAL2 4
 
 enum EventType {
-	E_NONE, E_CLICK, E_DOUBLECLICK, E_TRIPLECLICK, E_IDLE
+	E_NONE, E_IDLE, E_CLICK, E_HOLD
 };
 
 enum BeepType {
@@ -27,7 +27,10 @@ enum BeepType {
 
 void setupTimerInterrupt();
 inline int pepin(int n);
+void handleClicks();
 void beep(int mode);
 void showResults();
-void handleClicks();
 void calcResults();
+void procClick(int n);
+void procHold(int n);
+void procIdle(int n);
