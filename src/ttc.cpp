@@ -21,6 +21,20 @@
 		SEG_G | SEG_E
 	};
 
+	const uint8_t game21Segments[] = {
+		SEG_A | SEG_F | SEG_E | SEG_D | SEG_C,
+		SEG_G,
+		SEG_A | SEG_B | SEG_G | SEG_E | SEG_D,
+		SEG_B | SEG_C
+	};
+
+	const uint8_t game11Segments[] = {
+		SEG_A | SEG_F | SEG_E | SEG_D | SEG_C,
+		SEG_G,
+		SEG_B | SEG_C,
+		SEG_B | SEG_C
+	};
+
 	TM1637Display display1(CLK1,DIO1);
 	TM1637Display display2(CLK2,DIO2);
 
@@ -29,6 +43,8 @@
 		&display2
 	};
 
+	int gameMode;
+	int gameSelector;
 	bool changed;
 
 	int tick[2];
@@ -50,6 +66,8 @@
 		setupTimerInterrupt();
 		pinMode(BEEP,OUTPUT);
 
+		gameMode = 21;
+		gameSelector = 0;
 		changed = true;
 
 		for (int n = 0; n < 2; n++) {
@@ -72,7 +90,7 @@
 
 		for (int v = HALFBRITE; v <= FULLBRITE; v++) {
 			for (int n = 0; n < 2; n++) setBrightness(n,v);
-			welcome();
+			setSegments(welcomeSegments);
 			delay(200);
 		}
 
@@ -117,11 +135,13 @@
 	} // loop
 
 
-	void welcome() {
+	void setSegments(const uint8_t* segments) {
+
 		for (int n = 0; n < 2; n++) {
-			display[n]->setSegments(welcomeSegments);
+			display[n]->setSegments(segments);
 		}
-	} // welcome()
+
+	} // setSegments()
 
 
 	int pepin(int n) {
@@ -144,7 +164,7 @@
 			if (prec) {
 
 				if (lastState[n]) {  // press -> press: hold
-					// nop
+					event[n] = E_HOLD;
 				}  // if hold
 			
 				else {  // off -> press: click
@@ -249,6 +269,7 @@
 			if (event[n] == E_CLICK) procClick(n);
 			if (event[n] == E_HOLD) procHold(n);
 			if (event[n] == E_IDLE) procIdle(n);
+			if (event[n] == E_GAMESTART) procGameStart(n);
 
 		} // for
 
@@ -299,25 +320,75 @@
 
 	void procHold(int n) {
 
-		// TODO
+		int hold = tick[n] - lastClick[n];
+
+		if (hold < T_GAME21) {
+			gameSelector = 0;
+			event[n] = E_NONE;
+			return;
+		}
+
+		if (hold > T_GAME11) {
+			if (gameSelector != 11) {
+				gameSelector = 11;
+				setSegments(game11Segments);
+			}
+			event[n] = E_NONE;
+			return;
+		}
+
+		if (hold > T_GAME21) {
+			if (gameSelector != 21) {
+				gameSelector = 21;
+				setSegments(game21Segments);
+			}
+			event[n] = E_NONE;
+			return;
+		}
 
 		event[n] = E_NONE;
 
 	} // procHold()
 
 
-	void procIdle(int n) {
+	void procIdle(int n) {		
+
+		beep(B_IDLE);
+		setBrightness(n,FULLBRITE);
+
+		if (gameSelector > 0) {
+			event[n] = E_GAMESTART;
+			return;
+		}
 
 		for (int n = 0; n < 2; n++) {
 			if (score[n] < 0) score[n] = 0;
 		}
 
-		beep(B_IDLE);
-		setBrightness(n,FULLBRITE);
 		changed = true;
-
 		event[n] = E_NONE;
 
 	} // procIdle()
 
 
+	void procGameStart(int n) {
+
+		if (gameSelector == 21) {
+			setSegments(game21Segments);
+			beep(B_G21);
+		}
+
+		if (gameSelector == 11) {
+			setSegments(game11Segments);
+			beep(B_G11);
+		}
+
+		gameMode = gameSelector;
+		for (int n = 0; n < 2; n++) score[n] = 0;
+
+		delay(2200);
+
+		changed = true;
+		event[n] = E_NONE;
+
+	} // procGameStart()

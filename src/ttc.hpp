@@ -14,16 +14,17 @@
 # define PEDAL2 4
 
 enum EventType {
-	E_NONE, E_IDLE, E_CLICK, E_HOLD
+	E_NONE, E_IDLE, E_CLICK, E_HOLD, E_GAMESTART
 };
 
 enum BeepType {
-	B_WELCOME, B_IDLE
+	B_WELCOME, B_IDLE, B_G21, B_G11
 };
 
 // time values (1/10 sec)
 # define T_CLICKCLICK 8
-# define T_LONGPRESS 40
+# define T_GAME21 40
+# define T_GAME11 60
 
 // brightness values
 # define HALFBRITE 8
@@ -31,7 +32,7 @@ enum BeepType {
 
 
 void setupTimerInterrupt();
-void welcome();
+void setSegments(const uint8_t* segments);
 inline int pepin(int n);
 void handleClicks();
 void setBrightness(int n,int v);
@@ -42,3 +43,4 @@ void procEvent();
 void procClick(int n);
 void procHold(int n);
 void procIdle(int n);
+void procGameStart(int n);
