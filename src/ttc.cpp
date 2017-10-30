@@ -35,6 +35,9 @@
 		SEG_B | SEG_C
 	};
 
+	const uint8_t darkSegments[] = { 0,0,0,0 };
+
+
 	TM1637Display display1(CLK1,DIO1);
 	TM1637Display display2(CLK2,DIO2);
 
@@ -45,7 +48,7 @@
 
 	int gameMode;
 	int gameSelector;
-	bool changed;
+	bool matchOver;
 
 	int tick[2];
 	int score[2];
@@ -65,10 +68,6 @@
 
 		setupTimerInterrupt();
 		pinMode(BEEP,OUTPUT);
-
-		gameMode = 21;
-		gameSelector = 0;
-		changed = true;
 
 		for (int n = 0; n < 2; n++) {
 
@@ -93,6 +92,11 @@
 			setSegments(welcomeSegments);
 			delay(200);
 		}
+
+		event[0] = E_GAMESTART;
+		gameMode = 21;
+		gameSelector = 21;
+		matchOver = false;
 
 	} // setup()
 
@@ -130,6 +134,7 @@
 
 		handleClicks();
 		procEvent();
+		matchOverAnim();
 		delay(1);
 
 	} // loop
@@ -212,6 +217,7 @@
 
 
 	void setBrightness(int n,int v) {
+		if (matchOver) return;
 
 		brite[n] = v;
 
@@ -223,20 +229,61 @@
 	} // setBrightness()
 	
 
+	void beepGameStart(int p) {
+
+		for (int i = 0; i < 2; i++) {
+			for (int j = 0; j < p; j++) bip(5,100);
+			bip(100,400);		
+		}
+
+	} // beepGameStart()
+
+
+	void bip(int a,int b) {
+	
+		digitalWrite(BEEP,HIGH);
+		delay(a);
+		digitalWrite(BEEP,LOW);
+		if (b == 0) return;
+		delay(b);
+	
+	} // bip()
+
+
 	void beep(int mode) {
 
 		switch (mode) {
 
 		case B_WELCOME:
-			digitalWrite(BEEP,HIGH);
-			delay(20);
-			digitalWrite(BEEP,LOW);
+			bip(100,0);
 			break;
 
 		case B_IDLE:
-			digitalWrite(BEEP,HIGH);
-			delay(5);
-			digitalWrite(BEEP,LOW);
+			bip(5,0);
+			break;
+
+		case B_G21:
+			beepGameStart(2);
+			break;
+
+		case B_G11:
+			beepGameStart(1);
+			break;
+
+		case B_SERVECHANGE:
+			for (int i = 0; i < 3; i++) bip(5,100);
+			break;
+
+		case B_VICTORY:
+			bip(30,400);
+			bip(5,200);
+			bip(5,200);
+			bip(30,400);
+			bip(5,200);
+			bip(5,200);
+			bip(30,400);
+			bip(30,400);
+			bip(80,400);
 			break;
 
 		} // switch
@@ -251,9 +298,6 @@
 
 	void showResults() {
 
-		if (!changed) return;
-		changed = false;
-		
 		for (int n = 0; n < 2; n++) {
 			display[n]->showNumberDecEx(rz(score[n]),0xff,true,2,0);
 			display[n]->showNumberDecEx(rz(score[1 - n]),0,true,2,2);
@@ -273,12 +317,15 @@
 
 		} // for
 
-		showResults();
-
 	} // procEvent()
 
 
 	void procClick(int n) {
+
+		if (matchOver) {
+			event[n] = E_NONE;
+			return;
+		}
 
 		switch (clickCount[n]) {
 
@@ -311,9 +358,8 @@
 		} // switch
 
 		event[n] = E_NONE;
-
 		setBrightness(n,HALFBRITE);
-		changed = true;
+		showResults();
 
 	} // procClick()
 
@@ -328,9 +374,13 @@
 			return;
 		}
 
+		setBrightness(n,HALFBRITE);
+		matchOver = false;
+
 		if (hold > T_GAME11) {
 			if (gameSelector != 11) {
 				gameSelector = 11;
+				setBrightness(n,HALFBRITE);
 				setSegments(game11Segments);
 			}
 			event[n] = E_NONE;
@@ -340,20 +390,23 @@
 		if (hold > T_GAME21) {
 			if (gameSelector != 21) {
 				gameSelector = 21;
+				setBrightness(n,HALFBRITE);
 				setSegments(game21Segments);
 			}
 			event[n] = E_NONE;
 			return;
 		}
 
-		event[n] = E_NONE;
-
 	} // procHold()
 
 
 	void procIdle(int n) {		
+	
+		if (matchOver) {
+			event[n] = E_NONE;
+			return;
+		}
 
-		beep(B_IDLE);
 		setBrightness(n,FULLBRITE);
 
 		if (gameSelector > 0) {
@@ -365,13 +418,26 @@
 			if (score[n] < 0) score[n] = 0;
 		}
 
-		changed = true;
+		showResults();
+		procMatchOver();
+
+		if (!matchOver) {
+			if (serveChange()) {
+				beep(B_SERVECHANGE);
+			} else {
+				beep(B_IDLE);
+			}
+		} // if not match over
+
 		event[n] = E_NONE;
 
 	} // procIdle()
 
 
 	void procGameStart(int n) {
+
+		matchOver = false;
+		delay(600);
 
 		if (gameSelector == 21) {
 			setSegments(game21Segments);
@@ -384,11 +450,52 @@
 		}
 
 		gameMode = gameSelector;
+		delay(2000);
+
 		for (int n = 0; n < 2; n++) score[n] = 0;
+		showResults();
 
-		delay(2200);
-
-		changed = true;
 		event[n] = E_NONE;
 
 	} // procGameStart()
+
+
+	bool serveChange() {
+
+		int total = score[0] + score[1];
+		
+		if (total == 0) return false;
+		if (total > (gameMode == 21 ? 40 : 20)) return true;		
+
+		return ( total % (gameMode == 21 ? 5 : 3) == 0);
+	} // serveChange()
+
+
+	void procMatchOver() {
+		if (matchOver) return;
+
+		if ( (score[0] < gameMode) && (score[1] < gameMode) ) return;
+
+		int delta = score[0] - score[1];
+		if (delta < 0) delta = -delta;
+
+		if (delta < 2) return;
+
+		matchOver = true;
+		delay(600);
+		beep(B_VICTORY);
+		tick[0] = 0;
+
+	} // procMatchOver()
+
+
+	void matchOverAnim() {
+		if (!matchOver) return;
+
+		if (tick[0] % 16 < 5) {
+			setSegments(darkSegments);
+		} else {
+			showResults();
+		}
+
+	} // matchOverAnim()
