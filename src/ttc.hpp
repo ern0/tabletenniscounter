@@ -23,8 +23,7 @@ enum BeepType {
 
 // time values (1/10 sec)
 # define T_CLICKCLICK 8
-# define T_GAME21 40
-# define T_GAME11 60
+# define T_HOLD 40
 
 // brightness values
 # define HALFBRITE 8

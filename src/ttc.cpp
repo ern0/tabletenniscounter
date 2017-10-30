@@ -350,9 +350,14 @@
 
 		case 5:
 			score[1 - n]++;
+
 			clickCount[n] = 0;
 			lastClick[n] = 0;
+			
 			event[n] = E_IDLE;
+			setBrightness(n,FULLBRITE);
+			showResults();
+			
 			return;
 
 		} // switch
@@ -367,35 +372,26 @@
 	void procHold(int n) {
 
 		int hold = tick[n] - lastClick[n];
+		if (lastClick[n] == 0) return;
 
-		if (hold < T_GAME21) {
+		if (hold < T_HOLD) {
 			gameSelector = 0;
 			event[n] = E_NONE;
 			return;
 		}
 
-		setBrightness(n,HALFBRITE);
 		matchOver = false;
+		setBrightness(n,FULLBRITE);
 
-		if (hold > T_GAME11) {
-			if (gameSelector != 11) {
-				gameSelector = 11;
-				setBrightness(n,HALFBRITE);
-				setSegments(game11Segments);
-			}
-			event[n] = E_NONE;
-			return;
+		if (clickCount[n] == 1) {
+			gameSelector = 21;
+			setSegments(game21Segments);
+		} else {
+			gameSelector = 11;
+			setSegments(game11Segments);
 		}
-
-		if (hold > T_GAME21) {
-			if (gameSelector != 21) {
-				gameSelector = 21;
-				setBrightness(n,HALFBRITE);
-				setSegments(game21Segments);
-			}
-			event[n] = E_NONE;
-			return;
-		}
+		
+		event[n] = E_GAMESTART;
 
 	} // procHold()
 
@@ -408,11 +404,6 @@
 		}
 
 		setBrightness(n,FULLBRITE);
-
-		if (gameSelector > 0) {
-			event[n] = E_GAMESTART;
-			return;
-		}
 
 		for (int n = 0; n < 2; n++) {
 			if (score[n] < 0) score[n] = 0;
