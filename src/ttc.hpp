@@ -18,19 +18,27 @@ enum EventType {
 };
 
 enum BeepType {
-	BEEP_WELCOME
+	B_WELCOME, B_IDLE
 };
 
 // time values (1/10 sec)
-# define T_CLICKCLICK 10
+# define T_CLICKCLICK 8
 # define T_LONGPRESS 40
 
+// brightness values
+# define HALFBRITE 8
+# define FULLBRITE 15
+
+
 void setupTimerInterrupt();
+void welcome();
 inline int pepin(int n);
 void handleClicks();
+void setBrightness(int n,int v);
 void beep(int mode);
+inline int rz(int v);
 void showResults();
-void calcResults();
+void procEvent();
 void procClick(int n);
 void procHold(int n);
 void procIdle(int n);

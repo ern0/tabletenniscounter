@@ -14,7 +14,7 @@
 	//     ---
 	//      D
 
-	const uint8_t welcome[] = {
+	const uint8_t welcomeSegments[] = {
 		SEG_G | SEG_E | SEG_D,
 		SEG_E | SEG_G | SEG_C,
 		SEG_F | SEG_G | SEG_E | SEG_D,
@@ -33,6 +33,7 @@
 
 	int tick[2];
 	int score[2];
+	int brite[2];
 
 	int pressConfirm[2];
 	int lastClick[2];
@@ -57,6 +58,7 @@
 
 			tick[n] = 0;
 			score[n] = 0;
+			brite[n] = HALFBRITE;
 
 			pressConfirm[n] = 0;
 			lastClick[n] = 0;
@@ -64,13 +66,15 @@
 			event[n] = E_NONE;
 			lastState[n] = false;
 
-			display[n]->setBrightness(0x07);
-			display[n]->setSegments(welcome);
-			display[n]->setSegments(welcome);
 		}
 
-		beep(BEEP_WELCOME);
-		delay(800);
+		beep(B_WELCOME);
+
+		for (int v = HALFBRITE; v <= FULLBRITE; v++) {
+			for (int n = 0; n < 2; n++) setBrightness(n,v);
+			welcome();
+			delay(200);
+		}
 
 	} // setup()
 
@@ -107,11 +111,17 @@
 	void loop() {
 
 		handleClicks();
-		calcResults();
-		showResults();
+		procEvent();
 		delay(1);
 
 	} // loop
+
+
+	void welcome() {
+		for (int n = 0; n < 2; n++) {
+			display[n]->setSegments(welcomeSegments);
+		}
+	} // welcome()
 
 
 	int pepin(int n) {
@@ -149,7 +159,7 @@
 					if (lastClick[n] == 0) clickCount[n] = 0;
 					clickCount[n]++;
 
-					if (clickCount[n] > 4) clickCount[n] -= 4;
+					if (clickCount[n] > 6) clickCount[n] = 6;
 					event[n] = E_CLICK;
 
 					lastClick[n] = tick[n];
@@ -160,7 +170,7 @@
 
 			else {  // not press
 
-				if (!lastState[n]) {  // press -> off: release
+				if (lastState[n]) {  // press -> off: release
 					// nop
 				} // if release
 
@@ -181,14 +191,42 @@
 	} // handleClicks()
 
 
+	void setBrightness(int n,int v) {
+
+		brite[n] = v;
+
+		if (brite[1 - n] == HALFBRITE) v = HALFBRITE;
+
+		for (int n = 0; n < 2; n++) {
+			display[n]->setBrightness(v);
+		}
+	} // setBrightness()
+	
+
 	void beep(int mode) {
 
-return; ///
-		digitalWrite(BEEP,HIGH);
-		delay(20);
-		digitalWrite(BEEP,LOW);
+		switch (mode) {
+
+		case B_WELCOME:
+			digitalWrite(BEEP,HIGH);
+			delay(20);
+			digitalWrite(BEEP,LOW);
+			break;
+
+		case B_IDLE:
+			digitalWrite(BEEP,HIGH);
+			delay(5);
+			digitalWrite(BEEP,LOW);
+			break;
+
+		} // switch
 
 	} // beep()
+
+
+	int rz(int v) {
+		return ( v < 0 ? 0 : v );
+	} // rz()
 
 
 	void showResults() {
@@ -197,14 +235,14 @@ return; ///
 		changed = false;
 		
 		for (int n = 0; n < 2; n++) {
-			display[n]->showNumberDecEx(score[n],0xff,true,2,0);
-			display[n]->showNumberDecEx(score[1 - n],0,true,2,2);
+			display[n]->showNumberDecEx(rz(score[n]),0xff,true,2,0);
+			display[n]->showNumberDecEx(rz(score[1 - n]),0,true,2,2);
 		}
 
 	} // showResults()
 
 
-	void calcResults() {
+	void procEvent() {
 
 		for (int n = 0; n < 2; n++) {
 
@@ -214,7 +252,9 @@ return; ///
 
 		} // for
 
-	} // calcResults()
+		showResults();
+
+	} // procEvent()
 
 
 	void procClick(int n) {
@@ -223,35 +263,36 @@ return; ///
 
 		case 1:
 			score[n]++;
-			changed = true;
 			break;
 
 		case 2:
-			if (score[n] > 0) --score[n];
+			--score[n];
 			score[1 - n]++;
-			changed = true;
 			break;
 
 		case 3:
-			if (score[1 - n] > 0) {
-				--score[1 - n];
-				changed = true;
-			}
-			if (score[n] > 0) {
-				--score[n];
-				changed = true;
-			}
+			--score[1 - n];
+			--score[n];
 			break;
 
 		case 4:
 			score[n]++;
-			changed = true;
-			if (score[1 - n] > 0) --score[1 - n];
+			--score[1 - n];
 			break;
+
+		case 5:
+			score[1 - n]++;
+			clickCount[n] = 0;
+			lastClick[n] = 0;
+			event[n] = E_IDLE;
+			return;
 
 		} // switch
 
 		event[n] = E_NONE;
+
+		setBrightness(n,HALFBRITE);
+		changed = true;
 
 	} // procClick()
 
@@ -267,7 +308,13 @@ return; ///
 
 	void procIdle(int n) {
 
-		// TODO
+		for (int n = 0; n < 2; n++) {
+			if (score[n] < 0) score[n] = 0;
+		}
+
+		beep(B_IDLE);
+		setBrightness(n,FULLBRITE);
+		changed = true;
 
 		event[n] = E_NONE;
 
