@@ -46,9 +46,10 @@
 		&display2
 	};
 
-	int gameMode;
-	int gameSelector;
-	bool matchOver;
+	char gameMode;
+	char gameSelector;
+	char matchOver;
+
 
 	int tick[2];
 	int score[2];
@@ -73,15 +74,16 @@
 
 			pinMode(pepin(n),INPUT_PULLUP);
 
-			tick[n] = 0;
+			tick[n] = 1;
 			score[n] = 0;
 			brite[n] = HALFBRITE;
 
 			pressConfirm[n] = 0;
 			lastClick[n] = 0;
 			clickCount[n] = 0;
-			event[n] = E_NONE;
 			lastState[n] = false;
+
+			event[n] = E_IDLE;
 
 		}
 
@@ -93,10 +95,9 @@
 			delay(200);
 		}
 
-		event[0] = E_GAMESTART;
 		gameMode = 21;
 		gameSelector = 21;
-		matchOver = false;
+		matchOver = M_FIRST;
 
 	} // setup()
 
@@ -206,12 +207,12 @@
 						if (tick[n] - lastClick[n] > T_CLICKCLICK) {
 							lastClick[n] = 0;
 							event[n] = E_IDLE;
-							tick[n] = 1;
+							if (matchOver == M_PLAYING) tick[n] = 1;
 						}
 
 					} else {
 
-						tick[n] = 2;
+						if (matchOver == M_PLAYING) tick[n] = 2;
 
 					}
 
@@ -226,7 +227,7 @@
 
 
 	void setBrightness(int n,int v) {
-		if (matchOver) return;
+		if (matchOver != M_PLAYING) return;
 
 		brite[n] = v;
 
@@ -331,7 +332,7 @@
 
 	void procClick(int n) {
 
-		if (matchOver) {
+		if (matchOver != M_PLAYING) {
 			event[n] = E_NONE;
 			return;
 		}
@@ -389,7 +390,7 @@
 			return;
 		}
 
-		matchOver = false;
+		matchOver = M_PLAYING;
 		setBrightness(n,FULLBRITE);
 
 		if (clickCount[n] == 1) {
@@ -407,7 +408,7 @@
 
 	void procIdle(int n) {		
 	
-		if (matchOver) {
+		if (matchOver != M_PLAYING) {
 			event[n] = E_NONE;
 			return;
 		}
@@ -421,7 +422,7 @@
 		showResults();
 		procMatchOver();
 
-		if (!matchOver) {
+		if (matchOver == M_PLAYING) {
 			if (serveChange()) {
 				beep(B_SERVECHANGE);
 			} else {
@@ -436,7 +437,7 @@
 
 	void procGameStart(int n) {
 
-		matchOver = false;
+		matchOver = M_PLAYING;
 		delay(600);
 
 		if (gameSelector == 21) {
@@ -472,7 +473,7 @@
 
 
 	void procMatchOver() {
-		if (matchOver) return;
+		if (matchOver != M_PLAYING) return;
 
 		if ( (score[0] < gameMode) && (score[1] < gameMode) ) return;
 
@@ -481,7 +482,7 @@
 
 		if (delta < 2) return;
 
-		matchOver = true;
+		matchOver = M_OVER;
 		delay(600);
 		beep(B_VICTORY);
 		tick[0] = 0;
@@ -490,12 +491,17 @@
 
 
 	void matchOverAnim() {
-		if (!matchOver) return;
+		if (matchOver == M_PLAYING) return;
 
 		if (tick[0] % 16 < 5) {
 			setSegments(darkSegments);
 		} else {
-			showResults();
+			if (matchOver == M_OVER) {
+				showResults();
+			} else {
+				setSegments(welcomeSegments);
+			}
+
 		}
 
 	} // matchOverAnim()

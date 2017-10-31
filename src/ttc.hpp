@@ -21,6 +21,10 @@ enum BeepType {
 	B_WELCOME, B_IDLE, B_G21, B_G11, B_SERVECHANGE, B_VICTORY
 };
 
+enum MatchOverType {
+	M_PLAYING, M_OVER, M_FIRST
+};
+
 // time values (1/10 sec)
 # define T_CLICKCLICK 8
 # define T_HOLD 40
