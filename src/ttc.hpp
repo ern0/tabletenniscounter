@@ -18,7 +18,10 @@ enum EventType {
 };
 
 enum BeepType {
-	B_WELCOME, B_IDLE, B_G21, B_G11, B_SERVECHANGE, B_VICTORY
+	B_WELCOME, 
+	B_G21, B_G11, 
+	B_IDLE1, B_IDLE2, B_SERVECHANGE, 
+	B_VICTORY
 };
 
 enum MatchOverType {
@@ -52,3 +55,4 @@ void procGameStart(int n);
 bool serveChange();
 void procMatchOver();
 void matchOverAnim();
+inline char selectIdleBeep();

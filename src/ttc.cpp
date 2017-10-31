@@ -49,6 +49,7 @@
 	char gameMode;
 	char gameSelector;
 	char matchOver;
+	char firstPlayer;
 
 
 	int tick[2];
@@ -268,7 +269,11 @@
 			bip(100,0);
 			break;
 
-		case B_IDLE:
+		case B_IDLE2:
+			bip(5,100);
+			// fall to idle1
+
+		case B_IDLE1:
 			bip(5,0);
 			break;
 
@@ -425,11 +430,11 @@
 		if (matchOver == M_PLAYING) {
 			if (serveChange()) {
 				beep(B_SERVECHANGE);
-			} else {
-				beep(B_IDLE);
+				delay(400);
 			}
 		} // if not match over
 
+		beep( selectIdleBeep() );
 		event[n] = E_NONE;
 
 	} // procIdle()
@@ -437,7 +442,6 @@
 
 	void procGameStart(int n) {
 
-		matchOver = M_PLAYING;
 		delay(600);
 
 		if (gameSelector == 21) {
@@ -450,6 +454,8 @@
 			beep(B_G11);
 		}
 
+		firstPlayer = n;
+		matchOver = M_PLAYING;
 		gameMode = gameSelector;
 		delay(2000);
 
@@ -505,3 +511,14 @@
 		}
 
 	} // matchOverAnim()
+
+
+	char selectIdleBeep() {
+
+		if ( score[0] > score[1] ) {
+			return B_IDLE1;
+		} else {
+			return B_IDLE2;
+		}
+
+	} // selectIdleBeep()
