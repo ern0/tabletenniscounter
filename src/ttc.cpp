@@ -200,12 +200,21 @@
 				} // if release
 
 				else {  // off -> off: idle
+
 					if (lastClick[n] > 0) {
+						
 						if (tick[n] - lastClick[n] > T_CLICKCLICK) {
 							lastClick[n] = 0;
 							event[n] = E_IDLE;
+							tick[n] = 1;
 						}
+
+					} else {
+
+						tick[n] = 2;
+
 					}
+
 				} // else idle
 
 			} // else not press
