@@ -427,13 +427,16 @@
 		procMatchOver();
 
 		if (matchOver == M_PLAYING) {
+	
 			if (serveChange()) {
 				beep(B_SERVECHANGE);
 				delay(600);
 			}
+
+			beep( selectIdleBeep() );
+
 		} // if not match over
 
-		beep( selectIdleBeep() );
 		event[n] = E_NONE;
 
 	} // procIdle()
@@ -497,7 +500,7 @@
 	void matchOverAnim() {
 		if (matchOver == M_PLAYING) return;
 
-		if (tick[0] % 16 < 5) {
+		if (tick[0] % 16 > 11) {
 			setSegments(darkSegments);
 		} else {
 			if (matchOver == M_OVER) {
