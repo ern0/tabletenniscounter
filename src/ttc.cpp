@@ -49,7 +49,6 @@
 	char gameMode;
 	char gameSelector;
 	char matchOver;
-	char firstPlayer;
 
 
 	int tick[2];
@@ -430,7 +429,7 @@
 		if (matchOver == M_PLAYING) {
 			if (serveChange()) {
 				beep(B_SERVECHANGE);
-				delay(400);
+				delay(600);
 			}
 		} // if not match over
 
@@ -454,10 +453,9 @@
 			beep(B_G11);
 		}
 
-		firstPlayer = n;
 		matchOver = M_PLAYING;
 		gameMode = gameSelector;
-		delay(2000);
+		delay(1200);
 
 		for (int n = 0; n < 2; n++) score[n] = 0;
 		showResults();
@@ -515,10 +513,19 @@
 
 	char selectIdleBeep() {
 
-		if ( score[0] > score[1] ) {
+		int sc = score[0] + score[1];
+		int swap;
+
+		if (sc <= ( gameMode == 21 ? 40 : 20 )) {
+			swap = sc / ( gameMode == 21 ? 5 : 3 );
+		} else {
+			swap = sc;
+		}
+
+		if (swap % 2 == 0) {
 			return B_IDLE1;
 		} else {
 			return B_IDLE2;
 		}
-
+			
 	} // selectIdleBeep()
