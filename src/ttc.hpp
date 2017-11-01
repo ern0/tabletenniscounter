@@ -30,7 +30,7 @@ enum MatchOverType {
 
 // time values (1/10 sec)
 # define T_CLICKCLICK 8
-# define T_HOLD 40
+# define T_HOLD 25
 
 // brightness values
 # define HALFBRITE 8

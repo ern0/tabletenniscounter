@@ -50,7 +50,6 @@
 	char gameSelector;
 	char matchOver;
 
-
 	int tick[2];
 	int score[2];
 	int brite[2];
@@ -285,7 +284,7 @@
 			break;
 
 		case B_SERVECHANGE:
-			for (int i = 0; i < 3; i++) bip(5,100);
+			bip(200,200);
 			break;
 
 		case B_VICTORY:
