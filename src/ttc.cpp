@@ -52,6 +52,8 @@
 
 	int tick[2];
 	int score[2];
+	int lastScore[2];
+	int reservedScore[2];
 	int brite[2];
 
 	int pressConfirm[2];
@@ -343,6 +345,7 @@
 		switch (clickCount[n]) {
 
 		case 1:
+			reserveScore();
 			score[n]++;
 			break;
 
@@ -352,17 +355,7 @@
 			break;
 
 		case 3:
-			--score[1 - n];
-			--score[n];
-			break;
-
-		case 4:
-			score[n]++;
-			--score[1 - n];
-			break;
-
-		case 5:
-			score[1 - n]++;
+			restoreScore();
 
 			clickCount[n] = 0;
 			lastClick[n] = 0;
@@ -378,6 +371,8 @@
 		event[n] = E_NONE;
 		setBrightness(n,HALFBRITE);
 		showResults();
+
+		saveReservedScore();
 
 	} // procClick()
 
@@ -460,6 +455,8 @@
 		delay(1200);
 
 		for (int n = 0; n < 2; n++) score[n] = 0;
+		reserveScore();
+		saveReservedScore();
 		showResults();
 
 		event[n] = E_NONE;
@@ -474,7 +471,7 @@
 		if (total == 0) return false;
 		if (total > (gameMode == 21 ? 40 : 20)) return true;		
 
-		return ( total % (gameMode == 21 ? 5 : 3) == 0);
+		return ( total % (gameMode == 21 ? 5 : 3) == 0 );
 	} // serveChange()
 
 
@@ -531,3 +528,18 @@
 		}
 			
 	} // selectIdleBeep()
+
+
+	void reserveScore() {
+		for (int i = 0; i < 2; i++) reservedScore[i] = score[i];
+	} // reserveScore()
+
+
+	void saveReservedScore() {
+		for (int i = 0; i < 2; i++) lastScore[i] = reservedScore[i];		
+	} // saveReservedScore()
+
+
+	void restoreScore() {
+		for (int i = 0; i < 2; i++) score[i] = lastScore[i];
+	} // restoreScore()

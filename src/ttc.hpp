@@ -56,3 +56,6 @@ bool serveChange();
 void procMatchOver();
 void matchOverAnim();
 inline char selectIdleBeep();
+inline void reserveScore();
+inline void saveReservedScore();
+inline void restoreScore();
