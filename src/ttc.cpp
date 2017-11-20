@@ -372,8 +372,6 @@
 		setBrightness(n,HALFBRITE);
 		showResults();
 
-		saveReservedScore();
-
 	} // procClick()
 
 
@@ -405,7 +403,9 @@
 
 
 	void procIdle(int n) {		
-	
+
+		saveReservedScore();
+
 		if (matchOver != M_PLAYING) {
 			event[n] = E_NONE;
 			return;
